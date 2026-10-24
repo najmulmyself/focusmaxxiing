@@ -152,10 +152,13 @@ function TaskRow({ title, done, est, act, project, color, active }: { title: str
 }
 
 export function StyleTile() {
-  const [dark, setDark] = useState(false)
-  useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-  }, [dark])
+  const [dark, setDark] = useState(
+    () => document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches),
+  )
+  const toggleTheme = () => {
+    document.documentElement.dataset.theme = dark ? 'light' : 'dark'
+    setDark(!dark)
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-28 sm:px-8">
@@ -166,7 +169,7 @@ export function StyleTile() {
             A kitchen timer <em className="font-normal">with a pulse.</em>
           </h1>
         </div>
-        <button className="btn px-4 py-2 text-sm" onClick={() => setDark(!dark)} aria-pressed={dark}>
+        <button className="btn px-4 py-2 text-sm" onClick={toggleTheme} aria-pressed={dark}>
           {dark ? 'Light mode' : 'Dark mode'}
         </button>
       </header>
