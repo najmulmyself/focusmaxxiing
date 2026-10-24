@@ -1,6 +1,6 @@
 # focusmaxxiing — Product & Build Plan
 
-> Status: **Approved** · 2026-10-24 · Milestones 1–3 done
+> Status: **Approved** · 2026-10-24 · Milestones 1–4 done
 > Goal: a Pomodoro focus timer in the spirit of pomofocus.io, built first for one user (me), with
 > serious reporting, lossless data, full export, and a hand-crafted interactive mascot.
 
@@ -267,3 +267,24 @@ lands.
 - Templates: save the current list, apply it later, delete it; no limit.
 - Tests: 24 unit tests and 11 end-to-end tests (adds task crediting with reflection, delete with undo plus templates, and drag reorder surviving a reload).
 - Fixed along the way: a leaked outside-click listener that could close a newly opened menu.
+
+## 12. Milestone 4 outcome
+- Report maths in `src/reports/stats.ts` as pure, unit-tested functions:
+  - Ranges with Monday-start weeks, plus custom ranges.
+  - Exact splitting of sessions across hour, day and midnight boundaries; paused sessions are spread over their wall-clock span.
+  - Totals, streaks (today counts while it's still in progress), hour profile with the best two-hour window, estimate accuracy and bias, and per-project share.
+- Reports page:
+  - Period switcher with previous/next/now.
+  - Project filter.
+  - Five stat tiles.
+  - Stacked focus chart.
+  - "When you focus" chart.
+  - "Where it went" project breakdown.
+  - Estimates chart (actual against estimate).
+  - Year heatmap.
+  - Session log with search and filters.
+- Every chart has hover tooltips, a legend where there are two or more series, and a table view. Charts draw at their real width, so labels stay readable on phones.
+- Sessions can be edited, added by hand (for a forgotten timer) or soft-deleted with undo. Each change bumps the revision, ready for sync.
+- Sample data: about 5 months of plausible history, labelled and removable in one click. Real data is never touched.
+- Tests: 36 unit tests and 13 end-to-end tests.
+- Fixed along the way: a hidden table label made the page scroll sideways on phones, and week labels were mis-formatted.

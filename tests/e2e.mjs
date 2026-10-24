@@ -157,6 +157,18 @@ async function addTask(page, title, est = 1, project = null) {
   await page.getByRole('button', { name: `Work on “${title}”` }).waitFor()
 }
 
+/** Poll until a locator's text matches (UI updates from IndexedDB are async). */
+async function waitText(locator, re, timeout = 3000) {
+  const end = Date.now() + timeout
+  let last = ''
+  while (Date.now() < end) {
+    last = await locator.innerText().catch(() => '')
+    if (re.test(last)) return
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  throw new Error(`Expected ${re} in: ${JSON.stringify(last)}`)
+}
+
 const dbAll = (page, store) =>
   page.evaluate(
     (store) =>
@@ -229,6 +241,69 @@ await test('tasks: drag to reorder, and the order survives a reload', async (ctx
   await page.reload()
   await page.getByRole('button', { name: 'Work on “Third”' }).waitFor()
   assert.deepEqual(await titles(), ['Third', 'First', 'Second'])
+})
+
+await test('reports: real sessions, manual entry, edit, delete with undo', async (ctx) => {
+  const page = await open(ctx)
+  await addTask(page, 'Write the onboarding copy', 2, 'Writing')
+  for (let i = 0; i < 2; i++) {
+    await page.getByRole('button', { name: 'Start' }).click()
+    await page.clock.fastForward(25 * MIN + 1000)
+    await page.getByRole('button', { name: 'Skip', exact: true }).click() // dismiss reflection
+    await page.keyboard.press('1')
+  }
+  await page.getByRole('link', { name: 'Reports' }).click()
+  await page.getByRole('heading', { name: 'Reports' }).waitFor()
+  const tile = (k) => page.getByText(k, { exact: true }).locator('..')
+  assert.match(await tile('Focus time').innerText(), /50m/)
+  assert.match(await tile('Pomodoros').innerText(), /\b2\b/)
+  assert.match(await tile('Streak').innerText(), /1 day/)
+
+  // log a forgotten session by hand
+  await page.getByRole('button', { name: '+ Add session' }).click()
+  await page.getByLabel('Start').fill('08:00')
+  await page.getByLabel('Minutes focused').fill('40')
+  await page.getByLabel('Note').fill('Morning pages')
+  await page.getByRole('button', { name: 'Add session', exact: true }).click()
+  await page.getByRole('cell', { name: 'Morning pages' }).waitFor()
+  await waitText(tile('Focus time'), /1h 30m/)
+
+  // edit it
+  await page.getByRole('row', { name: /Morning pages/ }).getByRole('button', { name: /^Edit session/ }).click()
+  await page.getByLabel('Note').fill('Morning pages, edited')
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('cell', { name: 'Morning pages, edited' }).waitFor()
+
+  // delete, then undo
+  await page.getByRole('row', { name: /Morning pages, edited/ }).getByRole('button', { name: /^Edit session/ }).click()
+  await page.getByRole('button', { name: 'Delete' }).click()
+  await page.getByRole('button', { name: 'Delete' }).last().click()
+  await page.getByText('Session deleted.').waitFor()
+  await waitText(tile('Focus time'), /\n50m/)
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await page.getByRole('cell', { name: 'Morning pages, edited' }).waitFor()
+  const rows = await dbAll(page, 'sessions')
+  const manual = rows.find((r) => r.note === 'Morning pages, edited')
+  assert.equal(manual.revision, 4) // created, edited, deleted, restored
+  assert.equal(manual.deletedAt, null)
+})
+
+await test('reports: sample data loads and removes cleanly, leaving real data', async (ctx) => {
+  const page = await open(ctx)
+  await page.goto(URL.replace('#/', '#/reports'))
+  await page.getByRole('button', { name: 'Explore with sample data' }).click()
+  await page.getByText('You’re looking at sample data.').waitFor()
+  assert.ok((await dbAll(page, 'sessions')).length > 200)
+  // a real session logged while samples are loaded
+  await page.getByRole('button', { name: '+ Add session' }).click()
+  await page.getByLabel('Note').fill('Real work')
+  await page.getByRole('button', { name: 'Add session', exact: true }).click()
+  await page.getByRole('button', { name: 'Remove sample data' }).click()
+  await page.getByText('You’re looking at sample data.').waitFor({ state: 'detached' })
+  const left = await dbAll(page, 'sessions')
+  assert.equal(left.length, 1)
+  assert.equal(left[0].note, 'Real work')
+  assert.equal((await dbAll(page, 'projects')).length, 0)
 })
 
 await browser.close()

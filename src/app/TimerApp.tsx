@@ -17,7 +17,7 @@ import { Reflection } from './tasks/Reflection'
 import { db } from '../data/db'
 import { useLive } from '../data/useLive'
 import type { Task } from '../data/model'
-import { IconKeys, IconPause, IconPip, IconPlay, IconReset, IconSettings, IconSkip, IconSound } from './icons'
+import { IconChart, IconKeys, IconPause, IconPip, IconPlay, IconReset, IconSettings, IconSkip, IconSound } from './icons'
 
 const MODES: Mode[] = ['focus', 'short', 'long']
 
@@ -176,6 +176,10 @@ export function TimerApp() {
               <IconPip />
             </button>
           )}
+          <a className="btn h-10 gap-2 px-3 text-sm" href="#/reports" title="Reports">
+            <IconChart />
+            <span className="hidden sm:inline">Reports</span>
+          </a>
           <button className="btn hidden size-10 sm:inline-flex" onClick={() => setDialog('keys')} aria-label="Keyboard shortcuts" title="Shortcuts (?)">
             <IconKeys />
           </button>

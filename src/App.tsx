@@ -3,12 +3,13 @@ import { MascotLab } from './pages/MascotLab'
 import { StyleTile } from './pages/StyleTile'
 import { AssetSheet } from './pages/AssetSheet'
 import { TimerApp } from './app/TimerApp'
+import { ReportsPage } from './reports/ReportsPage'
 
-type Route = 'timer' | 'style' | 'mascot' | 'assets'
+type Route = 'timer' | 'reports' | 'style' | 'mascot' | 'assets'
 
 function readRoute(): Route {
   const h = location.hash.replace(/^#\/?/, '')
-  return h === 'mascot' || h === 'assets' || h === 'style' ? h : 'timer'
+  return h === 'reports' || h === 'mascot' || h === 'assets' || h === 'style' ? h : 'timer'
 }
 
 /** The timer is the app; the style tile and mascot lab stay as design references. */
@@ -22,6 +23,7 @@ export function App() {
 
   if (route === 'assets') return <AssetSheet />
   if (route === 'timer') return <TimerApp />
+  if (route === 'reports') return <ReportsPage />
   return (
     <div className="grain min-h-dvh">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-5 sm:px-8">

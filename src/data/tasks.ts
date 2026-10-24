@@ -112,6 +112,6 @@ export async function pomodoroCounts(taskIds: string[]): Promise<Map<string, num
   const counts = new Map<string, number>()
   if (!taskIds.length) return counts
   const rows = await db.sessions.where('taskId').anyOf(taskIds).toArray()
-  for (const r of rows) if (r.mode === 'focus' && r.status === 'completed' && r.taskId) counts.set(r.taskId, (counts.get(r.taskId) ?? 0) + 1)
+  for (const r of rows) if (r.mode === 'focus' && r.status === 'completed' && r.taskId && !r.deletedAt) counts.set(r.taskId, (counts.get(r.taskId) ?? 0) + 1)
   return counts
 }

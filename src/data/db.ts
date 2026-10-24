@@ -75,13 +75,24 @@ export async function flushPending(): Promise<number> {
 }
 
 export function sessionsBetween(from: number, to: number) {
-  return db.sessions.where('startedAt').between(from, to, true, false).sortBy('startedAt')
+  return db.sessions
+    .where('startedAt')
+    .between(from, to, true, false)
+    .filter((s) => !s.deletedAt)
+    .sortBy('startedAt')
 }
 
-/** Edit a logged session (note, rating, task). Bumps the revision so sync can tell versions apart. */
-export async function updateSession(id: string, patch: Partial<Pick<SessionRecord, 'note' | 'quality' | 'taskId' | 'projectId'>>) {
+export const allSessions = () => db.sessions.filter((s) => !s.deletedAt).sortBy('startedAt')
+
+export type SessionPatch = Partial<Pick<SessionRecord, 'note' | 'quality' | 'taskId' | 'projectId' | 'mode' | 'status' | 'startedAt' | 'endedAt' | 'actualSec' | 'deletedAt'>>
+
+/** Edit a logged session. Bumps the revision so sync can tell versions apart. */
+export async function updateSession(id: string, patch: SessionPatch) {
   await db.sessions.where('id').equals(id).modify((s) => {
     Object.assign(s, patch)
     s.revision = (s.revision ?? 1) + 1
   })
 }
+
+export const deleteSession = (id: string) => updateSession(id, { deletedAt: Date.now() })
+export const restoreSession = (id: string) => updateSession(id, { deletedAt: null })

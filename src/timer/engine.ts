@@ -55,6 +55,8 @@ export interface SessionRecord {
   device: string
   createdAt: number
   revision: number
+  /** soft delete; kept so sync can propagate the deletion */
+  deletedAt?: number | null
 }
 
 /** Below this, a reset or mode switch is treated as a mis-click and not logged. */

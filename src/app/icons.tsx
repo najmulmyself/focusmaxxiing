@@ -20,3 +20,4 @@ export const IconSound = ({ muted }: { muted?: boolean }) => (
     {muted ? <path d="M16 9.5l5 5M21 9.5l-5 5" /> : <path d="M16 9a4.5 4.5 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" />}
   </svg>
 )
+export const IconChart = () => <svg {...base}><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" /></svg>

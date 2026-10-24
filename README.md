@@ -6,9 +6,10 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 
 ## Status
 
-**Milestone 3 — tasks & projects** ✅ · Milestone 2 — core timer ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
+**Milestone 4 — reports** ✅ · Milestone 3 — tasks & projects ✅ · Milestone 2 — core timer ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
 
 - `#/` — the timer: focus / short / long break, Pip reacting live, tasks & projects, today's log
+- `#/reports` — reports: day / week / month / year / custom, by project, streaks, best hours, estimates, year heatmap, editable session log
 - `#/style` — style tile (design reference)
 - `#/mascot` — Pip's lab: every mood, character sheet
 - `#/assets` — source page for rendered brand assets
@@ -25,6 +26,13 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 - **Finish at** walks your remaining pomodoros forward, with short and long breaks placed exactly as the timer will.
 - After each focus: an optional one-liner on what you got done and a 1–5 focus rating, saved onto the session.
 - Templates for recurring lists (unlimited). Clearing or deleting tasks never deletes their history.
+
+### Reports
+- **Tiles:** focus time (vs the previous period), pomodoros, streak, completion rate, average focus rating.
+- **Charts:** focus per hour/day/month stacked by project; focus by hour of day with your strongest two-hour window; share per project; estimate vs actual for finished tasks; a year heatmap.
+- **Project filter** applies to everything on the page (streaks stay global).
+- **Session log:** search, filter, edit any session, add one you forgot to time, delete with undo. Edits bump the session's revision; deletes are soft.
+- **Sample data:** explore the reports before you have history; it's labelled and removes cleanly without touching real sessions.
 
 ### Shortcuts
 `Space` start/pause · `R` reset · `S` skip · `1` `2` `3` modes · `P` pop-out timer · `M` mute ambient · `,` settings · `?` all shortcuts
