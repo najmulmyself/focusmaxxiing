@@ -21,6 +21,7 @@ async function test(name, fn) {
     console.log(`  ✓ ${name}`)
   } catch (e) {
     failed++
+    if (process.env.E2E_SHOTS) for (const [i, pg] of context.pages().entries()) await pg.screenshot({ path: `${process.env.E2E_SHOTS}/fail-${name.slice(0, 20).replace(/\W+/g, '-')}-${i}.png` }).catch(() => {})
     console.log(`  ✗ ${name}\n    ${e.message.split('\n').join('\n    ')}`)
   } finally {
     await context.close()
@@ -142,6 +143,92 @@ await test('a second tab mirrors the running timer', async (ctx) => {
   const b = await open(ctx)
   await a.getByRole('button', { name: 'Start' }).click()
   await b.getByRole('button', { name: 'Pause' }).waitFor({ timeout: 3000 })
+})
+
+async function addTask(page, title, est = 1, project = null) {
+  await page.getByRole('button', { name: '+ Add task' }).click()
+  await page.getByPlaceholder('What are you working on?').fill(title)
+  for (let i = 1; i < est; i++) await page.getByRole('button', { name: 'One more' }).click()
+  if (project) {
+    await page.locator('select[id^=proj-]').selectOption('__new__')
+    await page.getByPlaceholder('Project name').fill(project)
+  }
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('button', { name: `Work on “${title}”` }).waitFor()
+}
+
+const dbAll = (page, store) =>
+  page.evaluate(
+    (store) =>
+      new Promise((res) => {
+        const r = indexedDB.open('focusmaxxiing')
+        r.onsuccess = () => {
+          const q = r.result.transaction(store).objectStore(store).getAll()
+          q.onsuccess = () => res(q.result)
+        }
+      }),
+    store,
+  )
+
+await test('tasks: credit a pomodoro, reflect, and finish the task', async (ctx) => {
+  const page = await open(ctx)
+  await addTask(page, 'Write the onboarding copy', 3, 'Writing')
+  await addTask(page, 'Inbox to zero')
+  // first task added is auto-selected
+  assert.match(await page.getByText(/^#1 ·/).innerText(), /Write the onboarding copy/i)
+  assert.match(await page.locator('#tasks-h').locator('..').locator('..').innerText(), /Finish at\s+10:55/i) // 4 pomodoros + 3 short breaks from 09:00
+  await page.getByRole('button', { name: 'Start' }).click()
+  await page.clock.fastForward(25 * MIN + 1000)
+  await page.getByLabel(/What did you get done/).fill('Drafted the welcome screen')
+  await page.getByRole('radio', { name: '4 of 5: Focused' }).click()
+  await page.getByLabel('Task finished').check()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await page.getByRole('checkbox', { name: /Mark “Write the onboarding copy” not done/ }).waitFor()
+  const [s] = await dbAll(page, 'sessions')
+  assert.equal(s.note, 'Drafted the welcome screen')
+  assert.equal(s.quality, 4)
+  assert.equal(s.revision, 2)
+  const tasks = await dbAll(page, 'tasks')
+  const projects = await dbAll(page, 'projects')
+  const task = tasks.find((t) => t.title === 'Write the onboarding copy')
+  assert.equal(s.taskId, task.id)
+  assert.equal(s.projectId, projects[0].id)
+  assert.equal(projects[0].name, 'Writing')
+  assert.match(await page.getByRole('button', { name: 'Work on “Write the onboarding copy”' }).locator('..').innerText(), /1\/3/)
+})
+
+await test('tasks: delete with undo, and templates', async (ctx) => {
+  const page = await open(ctx)
+  await addTask(page, 'Standup', 1)
+  await addTask(page, 'Deep work block', 4)
+  await page.getByRole('button', { name: 'Edit “Standup”' }).click()
+  await page.getByRole('button', { name: 'Delete' }).click()
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await page.getByRole('button', { name: 'Work on “Standup”' }).waitFor()
+  await page.getByRole('button', { name: 'Task list options' }).click()
+  await page.getByRole('button', { name: 'Save list as template…' }).click()
+  await page.getByLabel('Template name').fill('Workday')
+  await page.keyboard.press('Enter')
+  await page.getByText('Saved template “Workday”.').waitFor()
+  await page.getByRole('button', { name: 'Task list options' }).click()
+  await page.getByRole('button', { name: 'Clear all tasks…' }).click()
+  await page.getByRole('button', { name: 'Clear', exact: true }).click()
+  await page.getByRole('button', { name: 'Task list options' }).click()
+  await page.getByRole('button', { name: /^Workday/ }).click()
+  await page.getByRole('button', { name: 'Work on “Deep work block”' }).waitFor()
+  assert.equal((await dbAll(page, 'tasks')).filter((t) => !t.deletedAt).length, 2)
+})
+
+await test('tasks: drag to reorder, and the order survives a reload', async (ctx) => {
+  const page = await open(ctx)
+  for (const title of ['First', 'Second', 'Third']) await addTask(page, title)
+  const row = (title) => page.getByRole('button', { name: `Work on “${title}”` }).locator('..')
+  await row('Third').dragTo(row('First'))
+  const titles = async () => (await page.getByRole('button', { name: /^Work on/ }).allInnerTexts()).map((x) => x.trim())
+  assert.deepEqual(await titles(), ['Third', 'First', 'Second'])
+  await page.reload()
+  await page.getByRole('button', { name: 'Work on “Third”' }).waitFor()
+  assert.deepEqual(await titles(), ['Third', 'First', 'Second'])
 })
 
 await browser.close()

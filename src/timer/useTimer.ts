@@ -154,6 +154,8 @@ export function useTimer(settings: Settings, onEvent: (e: TimerEvent, isLeader: 
       commit(tr.state)
       emit('skipped', tr)
     },
+    /** Credit the current (and following) sessions to a task. */
+    selectTask: (taskId: string | null, projectId: string | null) => commit(E.setTask(stateRef.current, { taskId, projectId })),
     switchMode: (mode: E.Mode) => {
       const tr = E.reset(stateRef.current, Date.now(), settingsRef.current, device.current, mode)
       commit(tr.state)

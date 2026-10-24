@@ -2,6 +2,11 @@ import type { ReactNode } from 'react'
 import { Modal } from './Modal'
 import { playAlarm, setAmbient, unlockAudio } from '../audio/sound'
 import type { AlarmSound, Ambient, Settings, Theme } from '../timer/settings'
+import { db } from '../data/db'
+import { useLive } from '../data/useLive'
+import { addProject, updateProject } from '../data/tasks'
+import { PROJECT_COLORS, projectColor, type Project } from '../data/model'
+import { useState } from 'react'
 
 const ALARMS: [AlarmSound, string][] = [['anvil', "Pip's anvil"], ['bell', 'Bell'], ['kitchen', 'Kitchen timer'], ['chime', 'Chime'], ['none', 'Silent']]
 const AMBIENTS: [Ambient, string][] = [['none', 'Off'], ['fire', 'Fireplace'], ['rain', 'Rain'], ['brown', 'Brown noise']]
@@ -144,6 +149,10 @@ export function SettingsDialog({ open, onClose, settings: s, update, focusing }:
           </Row>
         </Group>
 
+        <Group title="Projects">
+          <ProjectsEditor />
+        </Group>
+
         <Group title="Elsewhere">
           <Row label="Desktop notifications" hint={notifBlocked ? 'Blocked in your browser settings' : 'When a session ends and this tab is hidden'} htmlFor="set-notif">
             <Switch id="set-notif" on={s.notifications && !notifBlocked} onChange={toggleNotifications} />
@@ -155,5 +164,79 @@ export function SettingsDialog({ open, onClose, settings: s, update, focusing }:
         </Group>
       </div>
     </Modal>
+  )
+}
+
+function ProjectRow({ p }: { p: Project }) {
+  const [name, setName] = useState(p.name)
+  const [picking, setPicking] = useState(false)
+  return (
+    <li className={`flex flex-wrap items-center gap-2 ${p.archived ? 'opacity-55' : ''}`}>
+      <button
+        className="size-7 shrink-0 rounded-full border-2 border-line"
+        style={{ background: projectColor(p.color) }}
+        aria-label={`Colour for ${p.name}`}
+        aria-expanded={picking}
+        onClick={() => setPicking(!picking)}
+      />
+      <label htmlFor={`proj-name-${p.id}`} className="sr-only">Project name</label>
+      <input
+        id={`proj-name-${p.id}`}
+        value={name}
+        maxLength={60}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={() => name.trim() && name.trim() !== p.name && void updateProject(p.id, { name: name.trim() })}
+        className="min-w-0 flex-1 rounded-lg border-2 border-transparent bg-transparent px-2 py-1 font-medium outline-none hover:border-line/20 focus:border-line"
+      />
+      <button className="btn px-2.5 py-1 text-xs" onClick={() => void updateProject(p.id, { archived: !p.archived })}>
+        {p.archived ? 'Restore' : 'Archive'}
+      </button>
+      {picking && (
+        <div className="flex w-full gap-1.5 pl-9" role="radiogroup" aria-label={`Colour for ${p.name}`}>
+          {Array.from({ length: PROJECT_COLORS }, (_, i) => i + 1).map((c) => (
+            <button
+              key={c}
+              role="radio"
+              aria-checked={c === p.color}
+              aria-label={`Colour ${c}`}
+              onClick={() => {
+                void updateProject(p.id, { color: c })
+                setPicking(false)
+              }}
+              className={`size-7 rounded-full border-2 border-line ${c === p.color ? 'ring-2 ring-fg ring-offset-2 ring-offset-surface' : ''}`}
+              style={{ background: projectColor(c) }}
+            />
+          ))}
+        </div>
+      )}
+    </li>
+  )
+}
+
+function ProjectsEditor() {
+  const projects = useLive(() => db.projects.orderBy('order').toArray(), [], [] as Project[])
+  const [draft, setDraft] = useState('')
+  return (
+    <div>
+      {projects.length === 0 && <p className="text-sm text-muted">Group tasks into projects to see where your focus goes.</p>}
+      <ul className="flex flex-col gap-2">
+        {projects.map((p) => (
+          <ProjectRow key={p.id} p={p} />
+        ))}
+      </ul>
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          if (!draft.trim()) return
+          await addProject(draft)
+          setDraft('')
+        }}
+      >
+        <label htmlFor="new-project" className="sr-only">New project</label>
+        <input id="new-project" value={draft} maxLength={60} onChange={(e) => setDraft(e.target.value)} placeholder="New project" className={`${field} min-w-0 flex-1 font-sans`} />
+        <button className="btn px-4 text-sm">Add</button>
+      </form>
+    </div>
   )
 }

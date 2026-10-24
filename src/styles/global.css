@@ -48,9 +48,11 @@
 
   /* project/series colours for charts — validated (CVD, contrast) vs --surface */
   --series-1: #E4572E;
-  --series-2: #2F6EA6;
-  --series-3: #B9851F;
-  --series-4: #7A5BB0;
+  --series-2: #1C8C6E;
+  --series-3: #7A5BB0;
+  --series-4: #B9851F;
+  --series-5: #2F6EA6;
+  --series-6: #C9407C;
   /* heatmap: single-hue sequential, empty -> deep */
   --heat-0: #EBE3D5;
   --heat-1: #F7C7B2;
@@ -81,9 +83,11 @@
     --fg-faint: #857d71;
     --line: #0e0d0b;
     --series-1: #E8623A;
-    --series-2: #4F8CC9;
-    --series-3: #B9851F;
-    --series-4: #9077C9;
+    --series-2: #2A9D7E;
+    --series-3: #9077C9;
+    --series-4: #B9851F;
+    --series-5: #4F8CC9;
+    --series-6: #D6588F;
     --heat-0: #34302b;
     --heat-1: #5a3426;
     --heat-2: #8f4026;
@@ -101,9 +105,11 @@
   --fg-faint: #857d71;
     --line: #0e0d0b;
   --series-1: #E8623A;
-  --series-2: #4F8CC9;
-  --series-3: #B9851F;
-  --series-4: #9077C9;
+  --series-2: #2A9D7E;
+  --series-3: #9077C9;
+  --series-4: #B9851F;
+  --series-5: #4F8CC9;
+  --series-6: #D6588F;
   --heat-0: #34302b;
   --heat-1: #5a3426;
   --heat-2: #8f4026;

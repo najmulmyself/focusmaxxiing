@@ -1,14 +1,33 @@
 import Dexie, { type Table } from 'dexie'
 import type { SessionRecord } from '../timer/engine'
+import type { Project, Task, Template } from './model'
 import { KEYS, readJSON, writeJSON } from './local'
 
 class FocusDB extends Dexie {
   sessions!: Table<SessionRecord, string>
+  tasks!: Table<Task, string>
+  projects!: Table<Project, string>
+  templates!: Table<Template, string>
   constructor() {
     super('focusmaxxiing')
     this.version(1).stores({
       sessions: 'id, startedAt, endedAt, mode, status, taskId',
     })
+    this.version(2)
+      .stores({
+        sessions: 'id, startedAt, endedAt, mode, status, taskId, projectId',
+        tasks: 'id, order, projectId',
+        projects: 'id, order',
+        templates: 'id',
+      })
+      .upgrade((tx) =>
+        tx
+          .table('sessions')
+          .toCollection()
+          .modify((s: SessionRecord) => {
+            s.projectId ??= null
+          }),
+      )
   }
 }
 
@@ -57,4 +76,12 @@ export async function flushPending(): Promise<number> {
 
 export function sessionsBetween(from: number, to: number) {
   return db.sessions.where('startedAt').between(from, to, true, false).sortBy('startedAt')
+}
+
+/** Edit a logged session (note, rating, task). Bumps the revision so sync can tell versions apart. */
+export async function updateSession(id: string, patch: Partial<Pick<SessionRecord, 'note' | 'quality' | 'taskId' | 'projectId'>>) {
+  await db.sessions.where('id').equals(id).modify((s) => {
+    Object.assign(s, patch)
+    s.revision = (s.revision ?? 1) + 1
+  })
 }

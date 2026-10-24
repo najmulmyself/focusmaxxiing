@@ -5,7 +5,7 @@ import type { SessionRecord } from '../timer/engine'
 
 const rec = (id: string, startedAt: number): SessionRecord => ({
   id, mode: 'focus', status: 'completed', plannedSec: 1500, actualSec: 1500, startedAt, endedAt: startedAt + 1_500_000,
-  pauses: 0, taskId: null, note: '', quality: null, device: 'test', createdAt: startedAt, revision: 1,
+  pauses: 0, taskId: null, projectId: null, note: '', quality: null, device: 'test', createdAt: startedAt, revision: 1,
 })
 
 describe('session store', () => {

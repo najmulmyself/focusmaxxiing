@@ -34,6 +34,9 @@ export interface TimerState {
   pauses: number
   /** focus sessions completed since the last long break */
   cycle: number
+  /** task being worked on; the session is credited to whatever is selected when it ends */
+  taskId: string | null
+  projectId: string | null
 }
 
 export interface SessionRecord {
@@ -46,6 +49,7 @@ export interface SessionRecord {
   endedAt: number
   pauses: number
   taskId: string | null
+  projectId: string | null
   note: string
   quality: number | null
   device: string
@@ -59,8 +63,17 @@ export const MIN_LOGGED_MS = 60_000
 export const plannedFor = (mode: Mode, s: TimerSettings) =>
   Math.round((mode === 'focus' ? s.focusMin : mode === 'short' ? s.shortMin : s.longMin) * 60_000)
 
-export function initialState(s: TimerSettings, mode: Mode = 'focus', cycle = 0): TimerState {
-  return { v: 1, mode, status: 'idle', plannedMs: plannedFor(mode, s), bankedMs: 0, segmentStart: null, sessionId: null, sessionStart: null, pauses: 0, cycle }
+type Task = { taskId: string | null; projectId: string | null }
+const NO_TASK: Task = { taskId: null, projectId: null }
+
+export function initialState(s: TimerSettings, mode: Mode = 'focus', cycle = 0, task: Task = NO_TASK): TimerState {
+  return { v: 1, mode, status: 'idle', plannedMs: plannedFor(mode, s), bankedMs: 0, segmentStart: null, sessionId: null, sessionStart: null, pauses: 0, cycle, ...task }
+}
+
+const taskOf = (t: TimerState): Task => ({ taskId: t.taskId ?? null, projectId: t.projectId ?? null })
+
+export function setTask(t: TimerState, task: Task): TimerState {
+  return { ...t, ...task }
 }
 
 export function elapsed(t: TimerState, now: number) {
@@ -100,7 +113,9 @@ function record(t: TimerState, status: Outcome, endedAt: number, actualMs: numbe
     startedAt: t.sessionStart!,
     endedAt,
     pauses: t.pauses,
-    taskId: null,
+    // breaks aren't credited to a task
+    taskId: t.mode === 'focus' ? (t.taskId ?? null) : null,
+    projectId: t.mode === 'focus' ? (t.projectId ?? null) : null,
     note: '',
     quality: null,
     device,
@@ -124,7 +139,7 @@ export function complete(t: TimerState, now: number, s: TimerSettings, device: s
   const endedAt = Math.min(now, dueAt)
   const rec = record(t, 'completed', endedAt, t.plannedMs, device)
   const { mode, cycle } = nextMode(t, s)
-  let state = initialState(s, mode, cycle)
+  let state = initialState(s, mode, cycle, taskOf(t))
   const onTime = now - dueAt < 5_000
   const auto = mode === 'focus' ? s.autoStartFocus : s.autoStartBreaks
   if (auto && onTime) state = start(state, endedAt, newId)
@@ -136,14 +151,14 @@ export function skip(t: TimerState, now: number, s: TimerSettings, device: strin
   const ms = elapsed(t, now)
   const rec = t.sessionId && ms >= MIN_LOGGED_MS ? record(t, 'skipped', now, ms, device) : null
   const { mode, cycle } = nextMode(t, s)
-  return { state: initialState(s, mode, t.mode === 'focus' && !rec ? t.cycle : cycle), record: rec }
+  return { state: initialState(s, mode, t.mode === 'focus' && !rec ? t.cycle : cycle, taskOf(t)), record: rec }
 }
 
 /** Stop and discard the current run, optionally switching mode. */
 export function reset(t: TimerState, now: number, s: TimerSettings, device: string, mode: Mode = t.mode): Transition {
   const ms = elapsed(t, now)
   const rec = t.sessionId && ms >= MIN_LOGGED_MS ? record(t, 'abandoned', now, ms, device) : null
-  return { state: initialState(s, mode, t.cycle), record: rec }
+  return { state: initialState(s, mode, t.cycle, taskOf(t)), record: rec }
 }
 
 /** Apply new durations to an idle timer; a session in progress keeps its plan. */

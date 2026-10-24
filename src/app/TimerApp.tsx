@@ -12,12 +12,17 @@ import { MODE_LABEL, fmtClock, useTabSignals } from './signals'
 import { usePip } from './usePip'
 import { useShortcuts, type Shortcut } from './useShortcuts'
 import { useToday } from './useToday'
+import { TasksPanel } from './tasks/TasksPanel'
+import { Reflection } from './tasks/Reflection'
+import { db } from '../data/db'
+import { useLive } from '../data/useLive'
+import type { Task } from '../data/model'
 import { IconKeys, IconPause, IconPip, IconPlay, IconReset, IconSettings, IconSkip, IconSound } from './icons'
 
 const MODES: Mode[] = ['focus', 'short', 'long']
 
 type Flash = { mood: 'celebrate' | 'sad'; until: number } | null
-type Toast = { id: number; text: string }
+type Toast = { id: number; text: string; undo?: () => void }
 
 function pipMood(t: TimerApi, flash: Flash): PipMood {
   if (flash && Date.now() < flash.until) return flash.mood
@@ -52,15 +57,20 @@ export function TimerApp() {
   const [dialog, setDialog] = useState<null | 'settings' | 'keys' | { confirm: Mode | 'reset' }>(null)
   const [muted, setMuted] = useState(false)
 
-  const toast = (text: string) => {
+  const [reflect, setReflect] = useState<SessionRecord | null>(null)
+
+  const toast = (text: string, undo?: () => void) => {
     const id = Date.now() + Math.random()
-    setToasts((t) => [...t, { id, text }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 6000)
+    setToasts((t) => [...t, { id, text, undo }])
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), undo ? 8000 : 6000)
   }
+  const dismissToast = (id: number) => setToasts((t) => t.filter((x) => x.id !== id))
+  const cheer = () => setFlash({ mood: 'celebrate', until: Date.now() + 1800 })
 
   const onEvent = (e: TimerEvent, leader: boolean) => {
     if (e.kind === 'completed' && e.record) {
       if (e.record.mode === 'focus') setFlash({ mood: 'celebrate', until: Date.now() + 3600 })
+      if (e.record.mode === 'focus' && !e.away) setReflect(e.record)
       if (e.away) {
         toast(`Your ${Math.round(e.record.actualSec / 60)}-minute ${MODE_LABEL[e.record.mode].toLowerCase()} finished while you were away. It's logged.`)
         return
@@ -78,6 +88,12 @@ export function TimerApp() {
   const { mode, status } = t.state
   const today = useToday()
   const focusDone = today?.filter((s) => s.mode === 'focus' && s.status === 'completed').length ?? 0
+  const activeTask = useLive(() => (t.state.taskId ? db.tasks.get(t.state.taskId) : Promise.resolve(undefined)), [t.state.taskId], undefined as Task | undefined)
+
+  // the reflection card goes away once the next focus session starts
+  useEffect(() => {
+    if (reflect && mode === 'focus' && status === 'running') setReflect(null)
+  }, [reflect, mode, status])
 
   useEffect(() => {
     document.documentElement.dataset.mode = mode
@@ -134,7 +150,9 @@ export function TimerApp() {
 
   const mood = pipMood(t, flash)
   const statusLine =
-    mode === 'focus' ? `#${focusDone + 1} · ${status === 'idle' ? 'Time to focus' : status === 'paused' ? 'Paused' : 'Focusing'}` : mode === 'short' ? 'Short break · stretch, sip, breathe' : 'Long break · you earned it'
+    mode === 'focus'
+      ? `#${focusDone + 1} · ${activeTask && !activeTask.deletedAt ? activeTask.title : status === 'idle' ? 'Time to focus' : status === 'paused' ? 'Paused' : 'Focusing'}`
+      : mode === 'short' ? 'Short break · stretch, sip, breathe' : 'Long break · you earned it'
 
   return (
     <div className="grain flex min-h-dvh flex-col bg-stage text-stage-ink transition-colors duration-700">
@@ -203,11 +221,16 @@ export function TimerApp() {
             </button>
           </div>
 
-          <p className="mt-6 font-mono text-xs uppercase tracking-[0.18em] opacity-85">{statusLine}</p>
+          <p className="mt-6 max-w-full truncate font-mono text-xs uppercase tracking-[0.18em] opacity-85">{statusLine}</p>
+
+          {reflect && <Reflection record={reflect} task={activeTask && activeTask.id === reflect.taskId ? activeTask : null} onClose={() => setReflect(null)} onTaskDone={cheer} />}
         </section>
       </main>
 
-      <TodayPanel sessions={today} />
+      <div className="mx-auto grid w-full max-w-5xl items-start gap-4 px-4 pb-8 sm:px-8 lg:grid-cols-[1.35fr_1fr] [&>*]:min-w-0">
+        <TasksPanel t={t} settings={settings} onToast={toast} onTaskDone={cheer} />
+        <TodayPanel sessions={today} />
+      </div>
 
       <footer className="mx-auto flex w-full max-w-5xl justify-between gap-4 px-4 pb-6 font-mono text-[11px] uppercase tracking-widest opacity-70 sm:px-8">
         <span>Saved on this device</span>
@@ -217,7 +240,7 @@ export function TimerApp() {
         </span>
       </footer>
 
-      <Toasts toasts={toasts} />
+      <Toasts toasts={toasts} onDismiss={dismissToast} />
 
       <SettingsDialog open={dialog === 'settings'} onClose={() => setDialog(null)} settings={settings} update={update} focusing={focusing} />
 
@@ -283,12 +306,14 @@ function MiniTimer({ t, mood, onToggle, onSkip }: { t: TimerApi; mood: PipMood; 
 const fmtTime = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
 function TodayPanel({ sessions }: { sessions: SessionRecord[] | null }) {
+  const taskIds = [...new Set(sessions?.map((s) => s.taskId).filter((x): x is string => !!x) ?? [])].join(',')
+  const tasks = useLive(() => (taskIds ? db.tasks.bulkGet(taskIds.split(',')) : Promise.resolve([])), [taskIds], [] as (Task | undefined)[])
+  const names = new Map(tasks.filter((x): x is Task => !!x).map((x) => [x.id, x.title]))
   const focus = sessions?.filter((s) => s.mode === 'focus') ?? []
   const focusMin = Math.round(focus.reduce((a, s) => a + s.actualSec, 0) / 60)
   const done = focus.filter((s) => s.status === 'completed').length
   return (
-    <section aria-labelledby="today-h" className="mx-auto w-full max-w-5xl px-4 pb-8 sm:px-8">
-      <div className="card p-5 text-fg sm:p-6">
+    <section aria-labelledby="today-h" className="card p-5 text-fg sm:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
           <h2 id="today-h" className="display text-2xl font-semibold">Today</h2>
           <div className="flex gap-5 font-mono text-xs uppercase tracking-widest text-muted">
@@ -310,7 +335,10 @@ function TodayPanel({ sessions }: { sessions: SessionRecord[] | null }) {
                 <span className="w-32 shrink-0 font-mono text-xs tabular-nums text-muted">
                   {fmtTime(s.startedAt)}–{fmtTime(s.endedAt)}
                 </span>
-                <span className="min-w-0 flex-1 truncate font-medium">{MODE_LABEL[s.mode]}</span>
+                <span className="min-w-0 flex-1 truncate font-medium" title={s.note || undefined}>
+                  {s.taskId && names.has(s.taskId) ? names.get(s.taskId) : MODE_LABEL[s.mode]}
+                  {s.note && <span className="ml-2 font-normal text-muted">— {s.note}</span>}
+                </span>
                 <span className="font-mono text-xs tabular-nums">{Math.round(s.actualSec / 60)}m</span>
                 {s.status !== 'completed' && (
                   <span className="rounded-full border-2 border-line/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-muted">{s.status === 'skipped' ? 'skipped' : 'unfinished'}</span>
@@ -319,17 +347,27 @@ function TodayPanel({ sessions }: { sessions: SessionRecord[] | null }) {
             ))}
           </ol>
         )}
-      </div>
     </section>
   )
 }
 
-function Toasts({ toasts }: { toasts: Toast[] }) {
+function Toasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className="pointer-events-auto max-w-md rounded-xl border-2 border-line bg-surface px-4 py-3 text-sm text-fg shadow-[0_4px_0_var(--line)]">
           {t.text}
+          {t.undo && (
+            <button
+              className="ml-3 font-semibold underline underline-offset-4"
+              onClick={() => {
+                t.undo?.()
+                onDismiss(t.id)
+              }}
+            >
+              Undo
+            </button>
+          )}
         </div>
       ))}
     </div>

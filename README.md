@@ -6,9 +6,9 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 
 ## Status
 
-**Milestone 2 — core timer** ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
+**Milestone 3 — tasks & projects** ✅ · Milestone 2 — core timer ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
 
-- `#/` — the timer: focus / short / long break, Pip reacting live, today's log
+- `#/` — the timer: focus / short / long break, Pip reacting live, tasks & projects, today's log
 - `#/style` — style tile (design reference)
 - `#/mascot` — Pip's lab: every mood, character sheet
 - `#/assets` — source page for rendered brand assets
@@ -18,6 +18,13 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 - **Survives anything.** The timer state is saved on every change, so a reload, crash or closed laptop resumes exactly where it was. A session that ends while the app is closed is logged with its real end time.
 - **Every session is logged** to IndexedDB (completed, skipped, or unfinished if it ran over a minute). Writes are idempotent; if IndexedDB fails they're parked in localStorage and retried.
 - **Several tabs open?** One tab leads (Web Locks) — one alarm, one log entry; the others mirror it.
+
+### Tasks
+- Tasks with estimated pomodoros, notes and a project; drag to reorder; click a task to work on it.
+- Each completed focus session is credited to the selected task (and its project) — counts like `2/4` come straight from the session log.
+- **Finish at** walks your remaining pomodoros forward, with short and long breaks placed exactly as the timer will.
+- After each focus: an optional one-liner on what you got done and a 1–5 focus rating, saved onto the session.
+- Templates for recurring lists (unlimited). Clearing or deleting tasks never deletes their history.
 
 ### Shortcuts
 `Space` start/pause · `R` reset · `S` skip · `1` `2` `3` modes · `P` pop-out timer · `M` mute ambient · `,` settings · `?` all shortcuts

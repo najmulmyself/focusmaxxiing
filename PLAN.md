@@ -1,6 +1,6 @@
 # focusmaxxiing — Product & Build Plan
 
-> Status: **Approved** · 2026-10-24 · Milestones 1–2 done
+> Status: **Approved** · 2026-10-24 · Milestones 1–3 done
 > Goal: a Pomodoro focus timer in the spirit of pomofocus.io, built first for one user (me), with
 > serious reporting, lossless data, full export, and a hand-crafted interactive mascot.
 
@@ -257,3 +257,13 @@ lands.
 - Settings dialog: durations, long-break interval, auto-start, sounds, notifications, theme.
 - Today panel showing the day's sessions live.
 - Tests: 13 unit tests and 8 end-to-end tests with a fake clock (reload mid-session, pause across reloads, completion, completion while closed, confirm-and-log on reset, shortcuts, settings persistence, two-tab sync). GitHub Actions CI runs them.
+
+## 11. Milestone 3 outcome
+- Tasks: title, estimate, notes, project; select to work on it; done toggle; drag to reorder; edit and delete with undo. Tasks are soft-deleted, so past sessions still resolve their names.
+- Projects: created inline from the task form or in Settings, then renamed, recoloured or archived. The palette grew to 6 validated colours (light and dark).
+- Sessions now record `taskId` and `projectId` (IndexedDB schema v2 with a migration). Pomodoro counts per task are derived from the session log.
+- "Finish at": a pure estimator that places short and long breaks exactly as the timer will, unit tested.
+- Post-session reflection: a one-line note, a 1–5 focus rating and an optional "Task finished", saved onto the session as a new revision.
+- Templates: save the current list, apply it later, delete it; no limit.
+- Tests: 24 unit tests and 11 end-to-end tests (adds task crediting with reflection, delete with undo plus templates, and drag reorder surviving a reload).
+- Fixed along the way: a leaked outside-click listener that could close a newly opened menu.
