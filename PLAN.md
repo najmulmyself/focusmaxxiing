@@ -1,6 +1,6 @@
 # focusmaxxiing — Product & Build Plan
 
-> Status: **Draft for review** · 2026-10-24
+> Status: **Approved** · 2026-10-24 · Milestone 1 done
 > Goal: a Pomodoro focus timer in the spirit of pomofocus.io, built first for one user (me), with
 > serious reporting, lossless data, full export, and a hand-crafted interactive mascot.
 
@@ -231,9 +231,16 @@ lands.
 
 ---
 
-## 8. Decisions needed from you
-1. **Mascot concept:** Pip (ember, recommended), Mochi (blob) or Tock (timer creature)?
-2. **Backend:** Cloudflare D1 (recommended) or Supabase, and do you want the Google Sheets mirror in v1?
-3. **Scope:** just you for now (single-user, Google sign-in locked to your email), with SaaS multi-user later. OK?
-4. **Primary device:** desktop browser, phone, or both equally?
-5. **Name/brand:** keep "focusmaxxiing" as the product name, or is that just the repo?
+## 8. Decisions (approved 2026-10-24)
+1. **Mascot:** Pip, the ember. While you focus, Pip forges at a tiny anvil (an original take on the "companion that works with you" idea).
+2. **Backend:** Cloudflare Workers + D1, with the Google Sheets mirror in v1.
+3. **Scope:** single-user (Google sign-in locked to the owner's email) now; multi-user SaaS later. The schema is already user-scoped.
+4. **Devices:** desktop and phone equally. The layout is mobile-first and keyboard-driven on desktop.
+5. **Name:** focusmaxxiing.
+
+## 9. Milestone 1 outcome
+- Style tile at `#/style`: palette, type (Fraunces, Instrument Sans, JetBrains Mono), sticker components, report chart styles, dark mode, and a working timer demo.
+- Pip at `#/mascot`: procedural SVG with 9 moods, cursor-tracking eyes, poke reactions, and reduced-motion support.
+- Brand assets in `public/`: app icons (512/192/180/32), `favicon.svg`, `og.png` and the web manifest, all rendered from the live component (`npm run icons`).
+- Chart palette validated for colour-blind separation and contrast in light and dark modes.
+- Skipped from the plan: a front/side/back turnaround. Pip is front-facing by design, and squash, tilt and lean cover the motion we need.

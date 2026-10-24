@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/mascot/Pip.tsx","./src/mascot/physics.test.ts","./src/mascot/physics.ts","./src/pages/AssetSheet.tsx","./src/pages/MascotLab.tsx","./src/pages/ReportPreview.tsx","./src/pages/StyleTile.tsx"],"version":"5.9.3"}
