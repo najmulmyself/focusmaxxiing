@@ -6,11 +6,21 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 
 ## Status
 
-**Milestone 1 — brand & mascot** ✅
+**Milestone 2 — core timer** ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
 
-- `#/style` — style tile: a working timer demo (with Pip reacting), palette, type, components, report charts, dark mode
-- `#/mascot` — Pip's lab: every mood live, character sheet, construction notes, scale and surface tests
-- `#/assets` — the source page that brand assets are rendered from
+- `#/` — the timer: focus / short / long break, Pip reacting live, today's log
+- `#/style` — style tile (design reference)
+- `#/mascot` — Pip's lab: every mood, character sheet
+- `#/assets` — source page for rendered brand assets
+
+### Timer guarantees
+- **No drift.** Time is computed from wall-clock timestamps, and ticks come from a Web Worker so background tabs stay on time.
+- **Survives anything.** The timer state is saved on every change, so a reload, crash or closed laptop resumes exactly where it was. A session that ends while the app is closed is logged with its real end time.
+- **Every session is logged** to IndexedDB (completed, skipped, or unfinished if it ran over a minute). Writes are idempotent; if IndexedDB fails they're parked in localStorage and retried.
+- **Several tabs open?** One tab leads (Web Locks) — one alarm, one log entry; the others mirror it.
+
+### Shortcuts
+`Space` start/pause · `R` reset · `S` skip · `1` `2` `3` modes · `P` pop-out timer · `M` mute ambient · `,` settings · `?` all shortcuts
 
 ## Develop
 
@@ -18,6 +28,7 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 npm install
 npm run dev        # http://localhost:5173
 npm test           # unit tests
+npm run e2e        # end-to-end durability tests (Playwright, fake clock)
 npm run build      # typecheck + production build
 npm run icons      # with the dev server running: re-render public/ icons, og image, favicon
 ```

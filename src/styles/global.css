@@ -68,6 +68,10 @@
 [data-mode="short"] { --accent: var(--sage); --accent-deep: var(--sage-deep); }
 [data-mode="long"]  { --accent: var(--dusk); --accent-deep: var(--dusk-deep); }
 
+/* The timer screen floods the page with the mode colour ("stage").
+   In dark mode the stage is the accent sunk into charcoal so it doesn't glare. */
+:root { --stage: var(--accent); --stage-ink: var(--on-accent); }
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: var(--charcoal);
@@ -85,6 +89,7 @@
     --heat-2: #8f4026;
     --heat-3: #d2552c;
     --heat-4: #ff9668;
+    --stage: color-mix(in oklab, var(--accent) 62%, var(--charcoal));
     color-scheme: dark;
   }
 }
@@ -104,6 +109,7 @@
   --heat-2: #8f4026;
   --heat-3: #d2552c;
   --heat-4: #ff9668;
+  --stage: color-mix(in oklab, var(--accent) 62%, var(--charcoal));
   color-scheme: dark;
 }
 
@@ -122,6 +128,8 @@
   --color-accent-deep: var(--accent-deep);
   --color-on-accent: var(--on-accent);
   --color-paper: var(--paper);
+  --color-stage: var(--stage);
+  --color-stage-ink: var(--stage-ink);
   --color-ink: var(--ink);
 }
 
@@ -159,34 +167,37 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* The "sticker" button: ink outline + hard offset shadow that collapses on press. */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: var(--stroke) solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--fg);
-  font-weight: 600;
-  box-shadow: 0 var(--lift) 0 var(--line);
-  transform: translateY(0);
-  transition: transform 90ms cubic-bezier(.3,.7,.4,1.5), box-shadow 90ms cubic-bezier(.3,.7,.4,1.5), background-color 200ms;
-  cursor: pointer;
-  user-select: none;
-}
-.btn:hover { transform: translateY(-1px); box-shadow: 0 calc(var(--lift) + 1px) 0 var(--line); }
-.btn:active, .btn[aria-pressed="true"] { transform: translateY(var(--lift)); box-shadow: 0 0 0 var(--line); }
-.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-.btn-accent { background: var(--accent); color: var(--on-accent); }
-.btn-ink { background: var(--ink); color: var(--paper); }
+/* Component classes live in the components layer so utilities can override them. */
+@layer components {
+  /* The "sticker" button: ink outline + hard offset shadow that collapses on press. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: var(--stroke) solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: 0 var(--lift) 0 var(--line);
+    transform: translateY(0);
+    transition: transform 90ms cubic-bezier(.3,.7,.4,1.5), box-shadow 90ms cubic-bezier(.3,.7,.4,1.5), background-color 200ms;
+    cursor: pointer;
+    user-select: none;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 calc(var(--lift) + 1px) 0 var(--line); }
+  .btn:active, .btn[aria-pressed="true"] { transform: translateY(var(--lift)); box-shadow: 0 0 0 var(--line); }
+  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .btn-accent { background: var(--accent); color: var(--on-accent); }
+  .btn-ink { background: var(--ink); color: var(--paper); }
 
-.card {
-  background: var(--surface);
-  border: var(--stroke) solid var(--line);
-  border-radius: calc(var(--radius) + 6px);
-  box-shadow: 0 var(--lift) 0 var(--line);
+  .card {
+    background: var(--surface);
+    border: var(--stroke) solid var(--line);
+    border-radius: calc(var(--radius) + 6px);
+    box-shadow: 0 var(--lift) 0 var(--line);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

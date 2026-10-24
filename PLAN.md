@@ -1,6 +1,6 @@
 # focusmaxxiing — Product & Build Plan
 
-> Status: **Approved** · 2026-10-24 · Milestone 1 done
+> Status: **Approved** · 2026-10-24 · Milestones 1–2 done
 > Goal: a Pomodoro focus timer in the spirit of pomofocus.io, built first for one user (me), with
 > serious reporting, lossless data, full export, and a hand-crafted interactive mascot.
 
@@ -244,3 +244,16 @@ lands.
 - Brand assets in `public/`: app icons (512/192/180/32), `favicon.svg`, `og.png` and the web manifest, all rendered from the live component (`npm run icons`).
 - Chart palette validated for colour-blind separation and contrast in light and dark modes.
 - Skipped from the plan: a front/side/back turnaround. Pip is front-facing by design, and squash, tilt and lean cover the motion we need.
+
+## 10. Milestone 2 outcome
+- Pure timer engine (`src/timer/engine.ts`) computes time from wall-clock timestamps; unit tested.
+- Crash-safe: the timer state is saved to localStorage on every change. A reload resumes the session, and a session that ends while the app is closed is completed with its true end time.
+- Session log in IndexedDB (Dexie), with idempotent writes, a localStorage fallback queue and a persistent-storage request. Completed, skipped and unfinished (reset after more than a minute) sessions are all recorded.
+- The tick runs in a Web Worker so background tabs aren't throttled. With several tabs open, one is elected leader through Web Locks and the others mirror its state.
+- Synthesized sound with no audio files: 4 alarms (Pip's anvil, bell, kitchen timer, chime) and 3 ambient loops (fireplace, rain, brown noise) that play during focus.
+- Desktop notifications, a live countdown in the tab title, and a progress-ring favicon.
+- Pop-out mini timer (Document Picture-in-Picture, Chromium browsers), with Pip and full controls.
+- Keyboard shortcuts with a help dialog; switching mode or resetting asks for confirmation once a focus session has real time in it.
+- Settings dialog: durations, long-break interval, auto-start, sounds, notifications, theme.
+- Today panel showing the day's sessions live.
+- Tests: 13 unit tests and 8 end-to-end tests with a fake clock (reload mid-session, pause across reloads, completion, completion while closed, confirm-and-log on reset, shortcuts, settings persistence, two-tab sync). GitHub Actions CI runs them.

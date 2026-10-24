@@ -149,18 +149,21 @@ export function Pip({
       setTick((n) => n + 1)
       return
     }
+    // animate on the window Pip is drawn in: inside a pop-out (PiP) window that
+    // keeps running while the main tab is hidden and its frames are paused
+    const view = svgRef.current?.ownerDocument.defaultView ?? window
     let raf = 0
-    let last = performance.now()
+    let last = view.performance.now()
     const loop = (now: number) => {
       // clamp dt so a backgrounded tab doesn't explode the springs on return
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
       step(s, dt, inputs.current, reduced.current, svgRef.current)
       setTick((n) => (n + 1) % 1_000_000)
-      raf = requestAnimationFrame(loop)
+      raf = view.requestAnimationFrame(loop)
     }
-    raf = requestAnimationFrame(loop)
-    return () => cancelAnimationFrame(raf)
+    raf = view.requestAnimationFrame(loop)
+    return () => view.cancelAnimationFrame(raf)
   }, [still])
 
   const poke = () => {
