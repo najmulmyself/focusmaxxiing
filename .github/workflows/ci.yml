@@ -45,3 +45,5 @@ jobs:
         run: npx wrangler d1 migrations apply focusmaxxiing --remote
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy dist --project-name focusmaxxiing --branch main --commit-hash "$GITHUB_SHA"
+      - name: Deploy Google Sheets mirror (cron Worker)
+        run: npx wrangler deploy -c mirror/wrangler.toml

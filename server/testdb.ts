@@ -1,11 +1,12 @@
 import { DatabaseSync } from 'node:sqlite'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import type { D1Like, D1Stmt } from './d1'
 
 /** D1-compatible wrapper over Node's built-in SQLite, for tests. */
 export function memoryD1(): D1Like {
   const db = new DatabaseSync(':memory:')
-  db.exec(readFileSync(new URL('./migrations/0001_init.sql', import.meta.url), 'utf8'))
+  const dir = new URL('./migrations/', import.meta.url)
+  for (const f of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) db.exec(readFileSync(new URL(f, dir), 'utf8'))
   const stmt = (sql: string, values: unknown[] = []): D1Stmt & { exec(): void } => ({
     bind: (...v: unknown[]) => stmt(sql, v),
     first: async <T,>() => (db.prepare(sql).get(...(values as never[])) as T) ?? null,

@@ -306,3 +306,21 @@ lands.
   - Unit tests cover an exact database round trip, merge keeping newer local edits, replace, and a damaged file.
   - End-to-end tests download a backup and a CSV, wipe the browser, restore through Settings and check the database is identical, and confirm a non-backup file is refused.
   - The suite now warms up Vite before the first test, which removes a cold-start flake.
+
+## 14. Milestone 6 outcome
+- Sync API as Cloudflare Pages Functions (`functions/api`, `server/`) on D1: Google sign-in (RS256 checked against Google's keys) limited to `ALLOWED_EMAILS`, hashed session tokens, push and pull with a per-user change number.
+- Every record (session, task, project, template, settings) is stored as a JSON document; the newest version wins, in a single D1 transaction, with strict validation.
+- Client sync engine: detects changes against server-confirmed versions, debounces pushes, pulls in pages, handles being offline and switching accounts. Sample data never leaves the device.
+- Sync panel in Settings and sync status in the timer footer.
+- Deployed to [focusmaxxiing.pages.dev](https://focusmaxxiing.pages.dev); every push to `main` that passes CI applies D1 migrations and deploys.
+- Tests: server tests on in-memory SQLite, and a two-device end-to-end test on the local Cloudflare runtime.
+- Not built yet: the nightly R2 snapshot.
+
+## 15. Milestone 7 outcome
+- A separate cron Worker (`mirror/`), because Pages Functions can't run on a schedule. It reads the same D1 database every hour.
+- It **rewrites** the *Sessions*, *Tasks* and *Projects* tabs instead of appending, because sessions get edited and soft-deleted, and an append-only sheet would drift from the real data.
+- Google access is a **service account** that the sheet is shared with. Signing in as the owner would need a stored refresh token, and those expire after 7 days while the Google app is in testing mode.
+- Columns match the CSV export (one shared row builder in `src/data/formats.ts`). Dates and times are real date values in the sheet's own time zone; values are written RAW, so nothing typed in the app can run as a formula.
+- Each tab is sized to its data before it's written, so deleted rows disappear and there's never a moment with stale rows. A run with no new changes makes no Google calls; once a day it rewrites anyway.
+- Errors say what to fix (share the sheet with the service account, check the sheet id), and a failed run is retried the next hour.
+- Tests: unit tests against a fake Google that checks the signed token; a local run on the Cloudflare runtime reaches Google's real token endpoint.

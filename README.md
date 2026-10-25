@@ -6,7 +6,7 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 
 ## Status
 
-**Milestone 5 — export & backup** ✅ · Milestone 4 — reports ✅ · Milestone 3 — tasks & projects ✅ · Milestone 2 — core timer ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
+**Milestone 7 — Google Sheets mirror** (built; switches on once a sheet is connected) · Milestone 6 — cloud sync ✅ · Milestone 5 — export & backup ✅ · Milestone 4 — reports ✅ · Milestone 3 — tasks & projects ✅ · Milestone 2 — core timer ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
 
 - `#/` — the timer: focus / short / long break, Pip reacting live, tasks & projects, today's log
 - `#/reports` — reports: day / week / month / year / custom, by project, streaks, best hours, estimates, year heatmap, editable session log
@@ -41,6 +41,10 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 - **Calendar (.ics):** focus sessions as events (RFC 5545, escaped and folded), for any calendar app.
 - The timer footer reminds you when you haven't backed up in a week.
 
+### Sync & Google Sheets
+- **Cloud sync:** sign in with Google in Settings → Sync. Every device keeps its own full copy and syncs through Cloudflare D1; the newest edit wins, and work done offline uploads when you reconnect.
+- **Google Sheets mirror:** an hourly Worker rewrites *Sessions*, *Tasks* and *Projects* tabs in your sheet, with real dates and times in the sheet's own time zone. Hours with no changes make no Google calls; once a day it rewrites anyway, so hand edits to those tabs don't linger. Put your own formulas and pivots in other tabs. It is a read-only copy: the app never reads from it.
+
 ### Shortcuts
 `Space` start/pause · `R` reset · `S` skip · `1` `2` `3` modes · `P` pop-out timer · `M` mute ambient · `,` settings · `?` all shortcuts
 
@@ -55,7 +59,15 @@ npm run build      # typecheck + production build
 npm run icons      # with the dev server running: re-render public/ icons, og image, favicon
 ```
 
-Pushes to `main` deploy to [focusmaxxiing.pages.dev](https://focusmaxxiing.pages.dev) once CI passes: D1 migrations, then Cloudflare Pages. It needs a `CLOUDFLARE_API_TOKEN` repository secret with *Cloudflare Pages: Edit* and *D1: Edit*. To deploy by hand: `npx wrangler login`, then `npm run deploy`.
+Pushes to `main` deploy to [focusmaxxiing.pages.dev](https://focusmaxxiing.pages.dev) once CI passes: D1 migrations, then Cloudflare Pages. It needs a `CLOUDFLARE_API_TOKEN` repository secret with *Cloudflare Pages: Edit*, *D1: Edit* and *Workers Scripts: Edit*. To deploy by hand: `npx wrangler login`, then `npm run db:migrate`, `npm run deploy` and `npm run deploy:mirror`.
+
+To switch on the Google Sheets mirror:
+1. In Google Cloud, enable the **Google Sheets API**, create a **service account**, and download a JSON key for it.
+2. Share your sheet with the service account's email as an **Editor**.
+3. Put the sheet's id (from `docs.google.com/spreadsheets/d/<id>/edit`) in `SHEET_ID` in [`mirror/wrangler.toml`](./mirror/wrangler.toml).
+4. In Cloudflare: Workers → `focusmaxxiing-mirror` → Settings → Variables and secrets, add the whole JSON key as the secret `GOOGLE_SERVICE_ACCOUNT`.
+
+Run it locally with `npx wrangler dev -c mirror/wrangler.toml --test-scheduled`, then open `/__scheduled`.
 
 ## Pip
 

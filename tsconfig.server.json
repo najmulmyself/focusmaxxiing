@@ -11,5 +11,5 @@
     "noEmit": true,
     "types": ["@cloudflare/workers-types", "node"]
   },
-  "include": ["server", "functions"]
+  "include": ["server", "functions", "mirror"]
 }

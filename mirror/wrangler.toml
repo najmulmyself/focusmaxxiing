@@ -1,0 +1,20 @@
+# Google Sheets mirror: a cron Worker next to the Pages app, reading the same D1 database.
+# Migrations live with the app (../wrangler.toml); this Worker only reads records and mirror_state.
+name = "focusmaxxiing-mirror"
+main = "index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[triggers]
+crons = ["17 * * * *"] # hourly; a run with no new changes makes no Google calls
+
+[[d1_databases]]
+binding = "DB"
+database_name = "focusmaxxiing"
+database_id = "4e536fac-a455-4a5f-9571-f53842106e7f"
+
+[vars]
+# Whose data is mirrored (the first address). GOOGLE_SERVICE_ACCOUNT is a secret, set in the dashboard.
+ALLOWED_EMAILS = "najmul.myself@gmail.com"
+# From the sheet's URL: docs.google.com/spreadsheets/d/<SHEET_ID>/edit. Empty keeps the mirror off.
+SHEET_ID = ""

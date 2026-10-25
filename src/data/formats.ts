@@ -39,16 +39,26 @@ export function toCSV(head: string[], rows: unknown[][]): string {
 const MODE = { focus: 'Focus', short: 'Short break', long: 'Long break' } as const
 const STATUS = { completed: 'Completed', skipped: 'Skipped', abandoned: 'Unfinished' } as const
 
-export function sessionsCSV(d: Dataset): string {
+/** How a table writes times: text for CSV, date serials for Google Sheets. */
+export interface Stamps {
+  date(ms: number): string | number
+  time(ms: number): string | number
+  dateTime(ms: number): string | number
+}
+const textStamps: Stamps = { date: (ms) => localStamp(ms).slice(0, 10), time: (ms) => localStamp(ms).slice(11), dateTime: localStamp }
+
+export const SESSION_COLUMNS = ['date', 'start', 'end', 'minutes', 'type', 'outcome', 'task', 'project', 'focus_rating', 'note', 'pauses', 'start_utc', 'end_utc', 'id']
+
+export function sessionRows(d: Dataset, stamp: Stamps = textStamps): unknown[][] {
   const tasks = new Map(d.tasks.map((t) => [t.id, t]))
   const projects = new Map(d.projects.map((p) => [p.id, p]))
-  const rows = d.sessions
+  return d.sessions
     .filter((s) => !s.deletedAt)
     .sort((a, b) => a.startedAt - b.startedAt)
     .map((s) => [
-      localStamp(s.startedAt).slice(0, 10),
-      localStamp(s.startedAt).slice(11),
-      localStamp(s.endedAt).slice(11),
+      stamp.date(s.startedAt),
+      stamp.time(s.startedAt),
+      stamp.time(s.endedAt),
       +(s.actualSec / 60).toFixed(2),
       MODE[s.mode],
       STATUS[s.status],
@@ -61,19 +71,28 @@ export function sessionsCSV(d: Dataset): string {
       new Date(s.endedAt).toISOString(),
       s.id,
     ])
-  return toCSV(['date', 'start', 'end', 'minutes', 'type', 'outcome', 'task', 'project', 'focus_rating', 'note', 'pauses', 'start_utc', 'end_utc', 'id'], rows)
 }
 
-export function tasksCSV(d: Dataset): string {
-  const projects = new Map(d.projects.map((p) => [p.id, p]))
+export const sessionsCSV = (d: Dataset): string => toCSV(SESSION_COLUMNS, sessionRows(d))
+
+export const TASK_COLUMNS = ['task', 'project', 'estimated_pomodoros', 'completed_pomodoros', 'focus_minutes', 'done', 'done_at', 'created_at', 'cleared', 'notes', 'id']
+
+/** Completed pomodoros and focus minutes per task, from the session log. */
+function focusByTask(sessions: SessionRecord[]) {
   const done = new Map<string, number>()
   const minutes = new Map<string, number>()
-  for (const s of d.sessions) {
+  for (const s of sessions) {
     if (s.deletedAt || s.mode !== 'focus' || !s.taskId) continue
     minutes.set(s.taskId, (minutes.get(s.taskId) ?? 0) + s.actualSec / 60)
     if (s.status === 'completed') done.set(s.taskId, (done.get(s.taskId) ?? 0) + 1)
   }
-  const rows = [...d.tasks]
+  return { done, minutes }
+}
+
+export function taskRows(d: Dataset, stamp: Stamps = textStamps): unknown[][] {
+  const projects = new Map(d.projects.map((p) => [p.id, p]))
+  const { done, minutes } = focusByTask(d.sessions)
+  return [...d.tasks]
     .sort((a, b) => a.createdAt - b.createdAt)
     .map((t) => [
       t.title,
@@ -82,14 +101,15 @@ export function tasksCSV(d: Dataset): string {
       done.get(t.id) ?? 0,
       Math.round(minutes.get(t.id) ?? 0),
       t.done ? 'yes' : 'no',
-      t.doneAt ? localStamp(t.doneAt) : '',
-      localStamp(t.createdAt),
+      t.doneAt ? stamp.dateTime(t.doneAt) : '',
+      stamp.dateTime(t.createdAt),
       t.deletedAt ? 'yes' : 'no',
       t.notes,
       t.id,
     ])
-  return toCSV(['task', 'project', 'estimated_pomodoros', 'completed_pomodoros', 'focus_minutes', 'done', 'done_at', 'created_at', 'cleared', 'notes', 'id'], rows)
 }
+
+export const tasksCSV = (d: Dataset): string => toCSV(TASK_COLUMNS, taskRows(d))
 
 /* ------------------------------------------------------------------ */
 /* iCalendar (RFC 5545)                                                */
