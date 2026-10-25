@@ -4,6 +4,9 @@ export const KEYS = {
   settings: 'fm.settings.v1',
   pending: 'fm.pending.v1',
   device: 'fm.device.v1',
+  /** when settings last changed, so sync can tell which device's settings are newer */
+  settingsAt: 'fm.settingsAt.v1',
+  sync: 'fm.sync.v1',
 } as const
 
 export function readJSON<T>(key: string): T | null {

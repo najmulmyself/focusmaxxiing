@@ -57,6 +57,8 @@ export interface SessionRecord {
   revision: number
   /** soft delete; kept so sync can propagate the deletion */
   deletedAt?: number | null
+  /** last edit time; sync uses it to decide which copy is newer */
+  updatedAt?: number
 }
 
 /** Below this, a reset or mode switch is treated as a mis-click and not logged. */

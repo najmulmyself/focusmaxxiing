@@ -8,6 +8,7 @@ import { addProject, updateProject } from '../data/tasks'
 import { PROJECT_COLORS, projectColor, type Project } from '../data/model'
 import { useState } from 'react'
 import { DataPanel } from './DataPanel'
+import { SyncPanel } from '../sync/SyncPanel'
 import { KEYS, readJSON } from '../data/local'
 import { sanitize } from '../timer/settings'
 
@@ -154,6 +155,10 @@ export function SettingsDialog({ open, onClose, settings: s, update, focusing }:
 
         <Group title="Projects">
           <ProjectsEditor />
+        </Group>
+
+        <Group title="Sync">
+          <SyncPanel />
         </Group>
 
         <Group title="Your data">

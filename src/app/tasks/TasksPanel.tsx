@@ -213,7 +213,7 @@ function TaskRow({
 }
 
 function ListMenu({ tasks, hasDone, onClose, onToast }: { tasks: Task[]; hasDone: boolean; onClose: () => void; onToast: (text: string) => void }) {
-  const templates = useLive(() => db.templates.toArray(), [], [])
+  const templates = useLive(() => db.templates.filter((t) => !t.deletedAt).toArray(), [], [])
   const [naming, setNaming] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
   const ref = useRef<HTMLDivElement>(null)

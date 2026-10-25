@@ -123,7 +123,7 @@ export function DataPanel({ range, onRestored }: { range?: ExportRange; onRestor
               </label>
               <label className="flex items-start gap-2">
                 <input type="radio" name="restore-mode" checked={mode === 'replace'} onChange={() => setMode('replace')} className="mt-1 accent-[var(--vermilion)]" />
-                <span><b>Replace</b> <span className="text-muted">: makes this browser an exact copy of the backup. Anything not in the backup is removed.</span></span>
+                <span><b>Replace</b> <span className="text-muted">: makes this browser an exact copy of the backup. Anything not in the backup is removed. If sync is on, anything still in your cloud copy comes back on the next sync.</span></span>
               </label>
             </div>
             <label className="flex items-center gap-2 text-sm">

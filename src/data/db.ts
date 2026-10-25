@@ -8,6 +8,8 @@ class FocusDB extends Dexie {
   tasks!: Table<Task, string>
   projects!: Table<Project, string>
   templates!: Table<Template, string>
+  /** last version of each record known to be on the server: `${kind}:${id}` → version */
+  syncState!: Table<{ key: string; version: number }, string>
   constructor() {
     super('focusmaxxiing')
     this.version(1).stores({
@@ -28,7 +30,34 @@ class FocusDB extends Dexie {
             s.projectId ??= null
           }),
       )
+    this.version(3).stores({ syncState: 'key' })
+    // tell the sync engine whenever a synced table changes (any write path)
+    this.use({
+      stack: 'dbcore',
+      name: 'sync-notify',
+      create: (down) => ({
+        ...down,
+        table: (name) => {
+          const t = down.table(name)
+          if (name === 'syncState') return t
+          return {
+            ...t,
+            mutate: (req) =>
+              t.mutate(req).then((res) => {
+                for (const fn of changeListeners) fn(name)
+                return res
+              }),
+          }
+        },
+      }),
+    })
   }
+}
+
+const changeListeners = new Set<(table: string) => void>()
+export const onLocalChange = (fn: (table: string) => void) => {
+  changeListeners.add(fn)
+  return () => changeListeners.delete(fn)
 }
 
 export const db = new FocusDB()
@@ -88,9 +117,12 @@ export type SessionPatch = Partial<Pick<SessionRecord, 'note' | 'quality' | 'tas
 
 /** Edit a logged session. Bumps the revision so sync can tell versions apart. */
 export async function updateSession(id: string, patch: SessionPatch) {
+  const now = Date.now()
   await db.sessions.where('id').equals(id).modify((s) => {
     Object.assign(s, patch)
     s.revision = (s.revision ?? 1) + 1
+    // strictly increasing, even for two edits in the same millisecond
+    s.updatedAt = Math.max(now, (s.updatedAt ?? s.createdAt) + 1)
   })
 }
 
