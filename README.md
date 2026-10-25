@@ -6,7 +6,7 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 
 ## Status
 
-**Milestone 4 — reports** ✅ · Milestone 3 — tasks & projects ✅ · Milestone 2 — core timer ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
+**Milestone 5 — export & backup** ✅ · Milestone 4 — reports ✅ · Milestone 3 — tasks & projects ✅ · Milestone 2 — core timer ✅ · [Milestone 1 — brand & mascot](./PLAN.md#9-milestone-1-outcome) ✅
 
 - `#/` — the timer: focus / short / long break, Pip reacting live, tasks & projects, today's log
 - `#/reports` — reports: day / week / month / year / custom, by project, streaks, best hours, estimates, year heatmap, editable session log
@@ -33,6 +33,13 @@ See [`PLAN.md`](./PLAN.md) for the product plan, competitor analysis, architectu
 - **Project filter** applies to everything on the page (streaks stay global).
 - **Session log:** search, filter, edit any session, add one you forgot to time, delete with undo. Edits bump the session's revision; deletes are soft.
 - **Sample data:** explore the reports before you have history; it's labelled and removes cleanly without touching real sessions.
+
+### Your data
+- **Full backup (.json):** everything, including deleted rows and settings, so a restore is exact. Settings → Your data, or Reports → Export.
+- **Restore:** *Merge* (default) adds what's missing and keeps the newer copy of anything edited, and never deletes. *Replace* makes this browser an exact copy of the backup, behind a confirmation. Files are validated first and imported in one transaction: all of it lands or none of it does.
+- **Sessions / tasks (.csv):** UTF-8 with BOM for Excel, RFC 4180 quoting, guarded against formula injection; local and UTC times.
+- **Calendar (.ics):** focus sessions as events (RFC 5545, escaped and folded), for any calendar app.
+- The timer footer reminds you when you haven't backed up in a week.
 
 ### Shortcuts
 `Space` start/pause · `R` reset · `S` skip · `1` `2` `3` modes · `P` pop-out timer · `M` mute ambient · `,` settings · `?` all shortcuts

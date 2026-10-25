@@ -1,6 +1,6 @@
 # focusmaxxiing — Product & Build Plan
 
-> Status: **Approved** · 2026-10-24 · Milestones 1–4 done
+> Status: **Approved** · 2026-10-24 · Milestones 1–5 done
 > Goal: a Pomodoro focus timer in the spirit of pomofocus.io, built first for one user (me), with
 > serious reporting, lossless data, full export, and a hand-crafted interactive mascot.
 
@@ -288,3 +288,21 @@ lands.
 - Sample data: about 5 months of plausible history, labelled and removable in one click. Real data is never touched.
 - Tests: 36 unit tests and 13 end-to-end tests.
 - Fixed along the way: a hidden table label made the page scroll sideways on phones, and week labels were mis-formatted.
+
+## 13. Milestone 5 outcome
+- Pure formats in `src/data/formats.ts`:
+  - CSV for sessions and tasks: RFC 4180 quoting, a BOM for Excel, a formula-injection guard, and local plus UTC times.
+  - iCalendar (RFC 5545): escaped text and 75-octet line folding.
+  - Versioned JSON backup that includes soft-deleted rows.
+  - A strict validator whose errors tell you what to do next.
+  - Merge-by-id where the newer version wins (revision for sessions, `updatedAt` for everything else).
+- Restore (`src/data/backup.ts`):
+  - Merge (the default) never deletes local data.
+  - Replace is guarded by an explicit confirmation.
+  - The import runs in a single transaction, so a damaged file changes nothing.
+  - Settings can optionally be restored too.
+- UI: a "Your data" panel in Settings, an Export dialog on Reports (current period or all time), and a backup reminder in the timer footer.
+- Tests: 48 unit tests and 15 end-to-end tests.
+  - Unit tests cover an exact database round trip, merge keeping newer local edits, replace, and a damaged file.
+  - End-to-end tests download a backup and a CSV, wipe the browser, restore through Settings and check the database is identical, and confirm a non-backup file is refused.
+  - The suite now warms up Vite before the first test, which removes a cold-start flake.

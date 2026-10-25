@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pip } from '../mascot/Pip'
+import { Modal } from '../app/Modal'
+import { DataPanel } from '../app/DataPanel'
 import { allSessions, db, restoreSession } from '../data/db'
 import { useLive } from '../data/useLive'
 import { projectColor, type Project, type Task } from '../data/model'
@@ -50,6 +52,7 @@ export function ReportsPage() {
   const [editing, setEditing] = useState<SessionRecord | 'new' | null>(null)
   const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     if (!toast) return
@@ -96,8 +99,15 @@ export function ReportsPage() {
         <a href="#/" className="display text-xl font-semibold tracking-tight">
           focusmaxxiing<span className="text-[var(--vermilion)]">.</span>
         </a>
-        <a href="#/" className="btn px-4 py-2 text-sm">← Timer</a>
+        <div className="flex gap-2">
+          <button className="btn px-4 py-2 text-sm" onClick={() => setExporting(true)}>Export</button>
+          <a href="#/" className="btn px-4 py-2 text-sm">← Timer</a>
+        </div>
       </header>
+
+      <Modal open={exporting} onClose={() => setExporting(false)} title="Export & backup">
+        <DataPanel range={{ from: range.from, to: range.to, label: rangeLabel(range) }} />
+      </Modal>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-24 sm:px-8">
         <div className="flex flex-wrap items-end justify-between gap-4 pt-8 pb-6">

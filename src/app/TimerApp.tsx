@@ -17,6 +17,7 @@ import { Reflection } from './tasks/Reflection'
 import { db } from '../data/db'
 import { useLive } from '../data/useLive'
 import type { Task } from '../data/model'
+import { lastBackupAt } from '../data/backup'
 import { IconChart, IconKeys, IconPause, IconPip, IconPlay, IconReset, IconSettings, IconSkip, IconSound } from './icons'
 
 const MODES: Mode[] = ['focus', 'short', 'long']
@@ -237,7 +238,7 @@ export function TimerApp() {
       </div>
 
       <footer className="mx-auto flex w-full max-w-5xl justify-between gap-4 px-4 pb-6 font-mono text-[11px] uppercase tracking-widest opacity-70 sm:px-8">
-        <span>Saved on this device</span>
+        <BackupNote sessions={today?.length ?? 0} onOpen={() => setDialog('settings')} />
         <span className="flex gap-4">
           <a href="#/style" className="hover:underline">Style tile</a>
           <a href="#/mascot" className="hover:underline">Meet Pip</a>
@@ -375,5 +376,25 @@ function Toasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number
         </div>
       ))}
     </div>
+  )
+}
+
+/** Quiet reminder in the footer: everything is local until you back it up (sync arrives in milestone 6). */
+function BackupNote({ sessions, onOpen }: { sessions: number; onOpen: () => void }) {
+  const last = lastBackupAt()
+  const days = last ? Math.floor((Date.now() - last) / 86_400_000) : null
+  const stale = days === null ? sessions > 0 : days >= 7
+  return (
+    <span>
+      Saved on this device
+      {stale && (
+        <>
+          {' · '}
+          <button className="underline underline-offset-4 hover:opacity-100" onClick={onOpen}>
+            {days === null ? 'Back up your data' : `Last backup ${days} days ago`}
+          </button>
+        </>
+      )}
+    </span>
   )
 }

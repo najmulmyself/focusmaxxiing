@@ -7,6 +7,9 @@ import { useLive } from '../data/useLive'
 import { addProject, updateProject } from '../data/tasks'
 import { PROJECT_COLORS, projectColor, type Project } from '../data/model'
 import { useState } from 'react'
+import { DataPanel } from './DataPanel'
+import { KEYS, readJSON } from '../data/local'
+import { sanitize } from '../timer/settings'
 
 const ALARMS: [AlarmSound, string][] = [['anvil', "Pip's anvil"], ['bell', 'Bell'], ['kitchen', 'Kitchen timer'], ['chime', 'Chime'], ['none', 'Silent']]
 const AMBIENTS: [Ambient, string][] = [['none', 'Off'], ['fire', 'Fireplace'], ['rain', 'Rain'], ['brown', 'Brown noise']]
@@ -151,6 +154,10 @@ export function SettingsDialog({ open, onClose, settings: s, update, focusing }:
 
         <Group title="Projects">
           <ProjectsEditor />
+        </Group>
+
+        <Group title="Your data">
+          <DataPanel onRestored={() => update(sanitize(readJSON(KEYS.settings)))} />
         </Group>
 
         <Group title="Elsewhere">

@@ -3,6 +3,9 @@
 import { createRequire } from 'node:module'
 import { createServer } from 'vite'
 import assert from 'node:assert/strict'
+import { readFile, writeFile, mkdtemp } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 const { chromium } = createRequire(import.meta.url)('playwright')
 const MIN = 60_000
@@ -13,6 +16,16 @@ await server.listen()
 const URL = 'http://localhost:5199/#/'
 const browser = await chromium.launch()
 let failed = 0
+
+// Warm up: Vite optimises dependencies on the first page load and reloads the page,
+// which would otherwise land in the middle of the first test.
+{
+  const warm = await browser.newPage()
+  await warm.goto(URL)
+  await warm.getByRole('timer').waitFor()
+  await warm.waitForTimeout(1500)
+  await warm.close()
+}
 
 async function test(name, fn) {
   const context = await browser.newContext()
@@ -304,6 +317,87 @@ await test('reports: sample data loads and removes cleanly, leaving real data', 
   assert.equal(left.length, 1)
   assert.equal(left[0].note, 'Real work')
   assert.equal((await dbAll(page, 'projects')).length, 0)
+})
+
+const snapshotDB = (page) =>
+  page.evaluate(async () => {
+    const db = await new Promise((res) => {
+      const r = indexedDB.open('focusmaxxiing')
+      r.onsuccess = () => res(r.result)
+    })
+    const all = (store) =>
+      new Promise((res) => {
+        const q = db.transaction(store).objectStore(store).getAll()
+        q.onsuccess = () => res(q.result.sort((a, b) => a.id.localeCompare(b.id)))
+      })
+    const out = {}
+    for (const s of ['sessions', 'tasks', 'projects', 'templates']) out[s] = await all(s)
+    db.close()
+    return out
+  })
+
+await test('backup: export → wipe → restore gives identical data', async (ctx) => {
+  const page = await open(ctx)
+  await page.goto(URL.replace('#/', '#/reports'))
+  await page.getByRole('button', { name: 'Explore with sample data' }).click()
+  await page.getByText('Focus by day').waitFor()
+  // a real session on top of the samples, with characters CSV has to escape
+  await page.getByRole('button', { name: '+ Add session' }).click()
+  await page.getByLabel('Note').fill('Real, with "quotes"')
+  await page.getByRole('button', { name: 'Add session', exact: true }).click()
+  await page.getByRole('cell', { name: 'Real, with "quotes"' }).waitFor()
+  const before = await snapshotDB(page)
+  assert.ok(before.sessions.length > 200)
+
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export backup', exact: true }).click()])
+  assert.match(dl.suggestedFilename(), /^focusmaxxiing-backup-\d{4}-\d{2}-\d{2}\.json$/)
+  const dir = await mkdtemp(join(tmpdir(), 'fm-'))
+  const file = join(dir, dl.suggestedFilename())
+  await dl.saveAs(file)
+  await page.getByText(/Last backup: today/).waitFor()
+
+  // CSV: one row per live session plus a header
+  await page.getByRole('radio', { name: 'All time' }).click()
+  const [csv] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Sessions (.csv)' }).click()])
+  const csvText = await readFile(await csv.path(), 'utf8')
+  assert.equal(csvText.trim().split('\r\n').length, before.sessions.filter((s) => !s.deletedAt).length + 1)
+  assert.ok(csvText.includes('"Real, with ""quotes"""'))
+
+  // wipe this browser completely
+  await page.evaluate(async () => {
+    localStorage.clear()
+    await new Promise((r) => {
+      const q = indexedDB.deleteDatabase('focusmaxxiing')
+      q.onsuccess = q.onerror = q.onblocked = r
+    })
+  })
+  await page.reload()
+  await page.getByText('Nothing to report yet').waitFor()
+
+  // restore through Settings on the timer screen
+  await page.goto(URL)
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByLabel(/Choose a .json file/).setInputFiles(file)
+  await page.getByRole('button', { name: 'Merge backup' }).click()
+  await page.getByText('Restored.').waitFor()
+  assert.deepEqual(await snapshotDB(page), before)
+})
+
+await test('backup: a file that is not a backup is refused and changes nothing', async (ctx) => {
+  const page = await open(ctx)
+  await addTask(page, 'Keep me')
+  const dir = await mkdtemp(join(tmpdir(), 'fm-'))
+  const file = join(dir, 'notes.json')
+  await writeFile(file, JSON.stringify({ hello: 'world' }))
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByLabel(/Choose a .json file/).setInputFiles(file)
+  await page.getByRole('radio', { name: /Replace/ }).check()
+  assert.equal(await page.getByRole('button', { name: 'Replace with backup' }).isDisabled(), true)
+  await page.getByLabel('I understand this replaces all data in this browser.').check()
+  await page.getByRole('button', { name: 'Replace with backup' }).click()
+  await page.getByText(/Nothing was imported\. This isn.t a focusmaxxiing backup/).waitFor()
+  assert.equal((await dbAll(page, 'tasks')).length, 1)
 })
 
 await browser.close()
