@@ -18,6 +18,7 @@ import { db } from '../data/db'
 import { useLive } from '../data/useLive'
 import type { Task } from '../data/model'
 import { lastBackupAt } from '../data/backup'
+import { ago, useSync } from '../sync/SyncPanel'
 import { IconChart, IconKeys, IconPause, IconPip, IconPlay, IconReset, IconSettings, IconSkip, IconSound } from './icons'
 
 const MODES: Mode[] = ['focus', 'short', 'long']
@@ -379,8 +380,21 @@ function Toasts({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number
   )
 }
 
-/** Quiet reminder in the footer: everything is local until you back it up (sync arrives in milestone 6). */
+/** Footer status: sync state when signed in, otherwise a quiet backup reminder. */
 function BackupNote({ sessions, onOpen }: { sessions: number; onOpen: () => void }) {
+  const sync = useSync()
+  if (sync.email) {
+    const text =
+      sync.phase === 'syncing' ? 'Syncing…' :
+      sync.phase === 'offline' ? `Offline · saved on this device${sync.pending ? ` · ${sync.pending} to sync` : ''}` :
+      sync.phase === 'error' ? 'Sync will retry' :
+      sync.lastSyncAt ? `Synced ${ago(sync.lastSyncAt)}` : 'Sync on'
+    return (
+      <button className="uppercase hover:underline" onClick={onOpen}>
+        {text}
+      </button>
+    )
+  }
   const last = lastBackupAt()
   const days = last ? Math.floor((Date.now() - last) / 86_400_000) : null
   const stale = days === null ? sessions > 0 : days >= 7

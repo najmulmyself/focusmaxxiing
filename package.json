@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "typecheck": "tsc -b",
+    "build": "tsc -b && tsc -p tsconfig.server.json && vite build",
+    "typecheck": "tsc -b && tsc -p tsconfig.server.json",
     "preview": "vite preview",
     "test": "vitest run",
     "icons": "node scripts/render-assets.mjs",
-    "e2e": "node tests/e2e.mjs"
+    "e2e": "node tests/e2e.mjs",
+    "e2e:sync": "npm run build && node tests/sync-e2e.mjs",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name focusmaxxiing --branch main",
+    "db:migrate": "wrangler d1 migrations apply focusmaxxiing --remote"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
@@ -21,7 +24,9 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261025.1",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
@@ -29,6 +34,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "wrangler": "^4.152.0"
   }
 }

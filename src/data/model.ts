@@ -38,6 +38,8 @@ export interface Template {
   items: TemplateItem[]
   createdAt: number
   updatedAt: number
+  /** soft delete, so the deletion reaches other devices */
+  deletedAt?: number | null
 }
 
 export const PROJECT_COLORS = 6

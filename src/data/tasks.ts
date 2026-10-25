@@ -51,7 +51,11 @@ export async function restoreTask(id: string) {
 /** Persist a new order for the given ids (the visible list, top to bottom). */
 export async function reorderTasks(ids: string[]) {
   await db.transaction('rw', db.tasks, async () => {
-    await Promise.all(ids.map((id, i) => db.tasks.update(id, { order: i + 1 })))
+    const t = now()
+    await Promise.all(ids.map((id, i) => db.tasks.where('id').equals(id).modify((x) => {
+      // only bump tasks that actually moved, so a reorder doesn't resync the whole list
+      if (x.order !== i + 1) Object.assign(x, { order: i + 1, updatedAt: t })
+    })))
   })
 }
 
@@ -104,7 +108,7 @@ export async function applyTemplate(id: string) {
 }
 
 export async function deleteTemplate(id: string) {
-  await db.templates.delete(id)
+  await db.templates.update(id, { deletedAt: now(), updatedAt: now() })
 }
 
 /** Completed focus sessions per task id. */

@@ -19,3 +19,5 @@ jobs:
           npm i --no-save playwright
           npx playwright install --with-deps chromium
           npm run e2e
+      - name: Two-device sync (local Cloudflare runtime)
+        run: node tests/sync-e2e.mjs

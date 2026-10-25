@@ -1,0 +1,15 @@
+# Cloudflare Pages: the built app (dist/) plus the /api functions, backed by D1.
+name = "focusmaxxiing"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "focusmaxxiing"
+database_id = "4e536fac-a455-4a5f-9571-f53842106e7f"
+migrations_dir = "server/migrations"
+
+[vars]
+# Sync stays off until GOOGLE_CLIENT_ID is set. Only these emails can sign in.
+ALLOWED_EMAILS = "najmul.myself@gmail.com"
+GOOGLE_CLIENT_ID = ""
