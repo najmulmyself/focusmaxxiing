@@ -55,6 +55,8 @@ npm run build      # typecheck + production build
 npm run icons      # with the dev server running: re-render public/ icons, og image, favicon
 ```
 
+Pushes to `main` deploy to [focusmaxxiing.pages.dev](https://focusmaxxiing.pages.dev) once CI passes: D1 migrations, then Cloudflare Pages. It needs a `CLOUDFLARE_API_TOKEN` repository secret with *Cloudflare Pages: Edit* and *D1: Edit*. To deploy by hand: `npx wrangler login`, then `npm run deploy`.
+
 ## Pip
 
 `src/mascot/Pip.tsx` is a self-contained React component — procedural SVG, no assets, no animation library.
