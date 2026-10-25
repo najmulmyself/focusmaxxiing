@@ -21,3 +21,27 @@ jobs:
           npm run e2e
       - name: Two-device sync (local Cloudflare runtime)
         run: node tests/sync-e2e.mjs
+
+  # Production deploy: only after every check above passes on a push to main.
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 78a266db7966e6c7952a7bf0a453e88f
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply focusmaxxiing --remote
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy dist --project-name focusmaxxiing --branch main --commit-hash "$GITHUB_SHA"
