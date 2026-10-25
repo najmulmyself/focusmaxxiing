@@ -12,4 +12,4 @@ migrations_dir = "server/migrations"
 [vars]
 # Sync stays off until GOOGLE_CLIENT_ID is set. Only these emails can sign in.
 ALLOWED_EMAILS = "najmul.myself@gmail.com"
-GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_ID = "924288548652-gbnqhesnsnns73rsuvb2btm6f88c299b.apps.googleusercontent.com"
